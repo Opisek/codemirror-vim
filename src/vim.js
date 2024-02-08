@@ -1680,6 +1680,7 @@ export function initVim(CodeMirror) {
         } else if (keyName && keyName != '<Left>' && keyName != '<Right>') {
           vimGlobalState.searchHistoryController.reset();
         }
+        console.log(`query: ${query}`);
         var parsedQuery;
         try {
           parsedQuery = updateSearchQuery(cm, query,
@@ -4981,14 +4982,16 @@ export function initVim(CodeMirror) {
    * If ignoreCase is passed in, the Regexp object will have the 'i' flag set.
    * If smartCase is passed in, and the query contains upper case letters,
    *   then ignoreCase is overridden, and the 'i' flag will not be set.
+   * If onePerLine is passed in, then only one match will be found per line.
    * If the query contains the /i in the flag part of the regular expression,
    *   then both ignoreCase and smartCase are ignored, and 'i' will be passed
    *   through to the Regex object.
    * @arg {string|RegExp} query
    * @arg {boolean} ignoreCase
    * @arg {boolean} smartCase
+   * @arg {boolean} onePerLine
    */
-  function parseQuery(query, ignoreCase, smartCase) {
+  function parseQuery(query, ignoreCase, smartCase, onePerLine) {
     // First update the last search register
     var lastSearchRegister = vimGlobalState.registerController.getRegister('/');
     lastSearchRegister.setText(query);
@@ -5018,6 +5021,7 @@ export function initVim(CodeMirror) {
     if (smartCase) {
       ignoreCase = (/^[^A-Z]*$/).test(regexPart);
     }
+    if (onePerLine) regexPart = `(?<!^.*${regexPart}.*)${regexPart}`;
     var regexp = new RegExp(regexPart,
         (ignoreCase || forceIgnoreCase) ? 'im' : 'm');
     return regexp;
@@ -5118,7 +5122,7 @@ export function initVim(CodeMirror) {
       return;
     }
     var state = getSearchState(cm);
-    var query = parseQuery(rawQuery, !!ignoreCase, !!smartCase);
+    var query = parseQuery(rawQuery, !!ignoreCase, !!smartCase, false);
     if (!query) {
       return;
     }
